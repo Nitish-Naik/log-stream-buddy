@@ -47,6 +47,25 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Log level colors
+        log: {
+          error: "hsl(var(--log-error))",
+          "error-bg": "hsl(var(--log-error-bg))",
+          warning: "hsl(var(--log-warning))",
+          "warning-bg": "hsl(var(--log-warning-bg))",
+          info: "hsl(var(--log-info))",
+          "info-bg": "hsl(var(--log-info-bg))",
+          debug: "hsl(var(--log-debug))",
+          "debug-bg": "hsl(var(--log-debug-bg))",
+          success: "hsl(var(--log-success))",
+          "success-bg": "hsl(var(--log-success-bg))",
+        },
+        // Status colors
+        status: {
+          online: "hsl(var(--status-online))",
+          offline: "hsl(var(--status-offline))",
+          error: "hsl(var(--status-error))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -57,6 +76,23 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      backgroundImage: {
+        "gradient-primary": "var(--gradient-primary)",
+        "gradient-surface": "var(--gradient-surface)",
+        "gradient-chart": "var(--gradient-chart)",
+      },
+      boxShadow: {
+        soft: "var(--shadow-soft)",
+        elevated: "var(--shadow-elevated)",
+        glow: "var(--shadow-glow)",
+      },
+      transitionTimingFunction: {
+        smooth: "var(--transition-smooth)",
+        fast: "var(--transition-fast)",
+      },
+      fontFamily: {
+        mono: ["JetBrains Mono", "Fira Code", "Monaco", "Consolas", "monospace"],
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -2,12 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Instant Dev Logs - Developer-focused Design System */
 
 @layer base {
   :root {
+    /* Light theme (fallback) */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
@@ -17,7 +16,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 142 76% 36%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -34,63 +33,94 @@ All colors MUST be HSL.
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 142 76% 36%;
+
+    /* Log level colors */
+    --log-error: 0 84% 60%;
+    --log-error-bg: 0 84% 60% / 0.1;
+    --log-warning: 43 96% 56%;
+    --log-warning-bg: 43 96% 56% / 0.1;
+    --log-info: 213 94% 68%;
+    --log-info-bg: 213 94% 68% / 0.1;
+    --log-debug: 213 19% 64%;
+    --log-debug-bg: 213 19% 64% / 0.1;
+    --log-success: 142 76% 36%;
+    --log-success-bg: 142 76% 36% / 0.1;
+
+    /* Status indicators */
+    --status-online: 142 76% 36%;
+    --status-offline: 213 19% 64%;
+    --status-error: 0 84% 60%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
+    --gradient-surface: linear-gradient(145deg, hsl(0 0% 98%), hsl(0 0% 95%));
+    --gradient-chart: linear-gradient(180deg, hsl(142 76% 36% / 0.8), hsl(142 76% 36% / 0.1));
+
+    /* Shadows */
+    --shadow-soft: 0 2px 10px hsl(0 0% 0% / 0.1);
+    --shadow-elevated: 0 8px 30px hsl(0 0% 0% / 0.15);
+    --shadow-glow: 0 0 20px hsl(142 76% 36% / 0.3);
+
+    /* Animation */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s ease-out;
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Dark theme - primary for developer tools */
+    --background: 210 11% 6%;
+    --foreground: 213 31% 91%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 210 11% 8%;
+    --card-foreground: 213 31% 91%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 210 11% 8%;
+    --popover-foreground: 213 31% 91%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 142 76% 36%;
+    --primary-foreground: 210 11% 6%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 210 11% 15%;
+    --secondary-foreground: 213 31% 91%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 210 11% 12%;
+    --muted-foreground: 213 19% 64%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 210 11% 15%;
+    --accent-foreground: 213 31% 91%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 210 11% 18%;
+    --input: 210 11% 12%;
+    --ring: 142 76% 36%;
+
+    /* Dark theme gradients */
+    --gradient-surface: linear-gradient(145deg, hsl(210 11% 8%), hsl(210 11% 12%));
+    --shadow-soft: 0 2px 10px hsl(210 11% 4% / 0.3);
+    --shadow-elevated: 0 8px 30px hsl(210 11% 4% / 0.4);
+
+    --sidebar-background: 210 11% 12%;
+    --sidebar-foreground: 213 31% 91%;
+    --sidebar-primary: 142 76% 36%;
+    --sidebar-primary-foreground: 210 11% 6%;
+    --sidebar-accent: 210 11% 15%;
+    --sidebar-accent-foreground: 213 31% 91%;
+    --sidebar-border: 210 11% 18%;
+    --sidebar-ring: 142 76% 36%;
   }
 }
 
