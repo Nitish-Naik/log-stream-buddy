@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Header } from "@/components/dashboard/Header";
-import { FilterSidebar } from "@/components/dashboard/FilterSidebar";
+import { AppNavigation } from "@/components/navigation/AppNavigation";
 import { ChartsSection } from "@/components/dashboard/ChartsSection";
 import { LogsTable } from "@/components/dashboard/LogsTable";
 import { LiveStream } from "@/components/dashboard/LiveStream";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { Header } from "@/components/dashboard/Header";
 
 export interface LogFilters {
   level: string[];
@@ -32,15 +32,12 @@ const Index = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen w-full flex bg-background">
-        {/* Filter Sidebar */}
-        <FilterSidebar 
-          filters={filters} 
-          onFiltersChange={setFilters}
-        />
+        {/* Navigation Sidebar */}
+        <AppNavigation />
 
         {/* Main Content */}
         <SidebarInset className="flex-1">
-          {/* Header with sidebar trigger */}
+          {/* Header */}
           <header className="h-16 flex items-center border-b border-border bg-card px-4 sticky top-0 z-10">
             <SidebarTrigger className="mr-4" />
             <Header />
