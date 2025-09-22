@@ -64,8 +64,8 @@ export const FilterSidebar = ({ filters, onFiltersChange }: FilterSidebarProps) 
     filters.timeRange.to;
 
   return (
-    <Sidebar className={isCollapsed ? "w-14" : "w-80"} collapsible="icon">
-      <SidebarContent className="bg-card">
+    <Sidebar collapsible="icon" className="border-r">
+      <SidebarContent className="bg-card border-0">
         {!isCollapsed && (
           <>
             <SidebarGroup>
