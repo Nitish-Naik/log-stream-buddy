@@ -400,6 +400,7 @@ const OrganizationSettings = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </AppLayout>
   );

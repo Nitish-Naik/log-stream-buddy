@@ -325,6 +325,7 @@ const TeamManagement = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </AppLayout>
   );

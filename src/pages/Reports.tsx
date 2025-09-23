@@ -323,6 +323,7 @@ const Reports = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </AppLayout>
   );
