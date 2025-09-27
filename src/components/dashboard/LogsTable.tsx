@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { LogFilters } from "@/pages/Index";
 import { LogLevelBadge } from "@/components/dashboard/LogLevelBadge";
+import { LogDetailModal } from "@/components/dashboard/LogDetailModal";
 import { format } from "date-fns";
 
 interface LogsTableProps {
@@ -94,6 +95,7 @@ export const LogsTable = ({ filters }: LogsTableProps) => {
   const [pageSize] = useState(50);
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -207,7 +209,10 @@ export const LogsTable = ({ filters }: LogsTableProps) => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setSelectedLog(log)}
+                      onClick={() => {
+                        setSelectedLog(log);
+                        setIsDetailModalOpen(true);
+                      }}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -262,6 +267,16 @@ export const LogsTable = ({ filters }: LogsTableProps) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Log Detail Modal */}
+      <LogDetailModal 
+        log={selectedLog}
+        open={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedLog(null);
+        }}
+      />
     </div>
   );
 };

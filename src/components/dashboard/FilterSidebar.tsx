@@ -195,6 +195,7 @@ export const FilterSidebar = ({ filters, onFiltersChange }: FilterSidebarProps) 
                               })
                             }
                             initialFocus
+                            className="pointer-events-auto"
                           />
                         </PopoverContent>
                       </Popover>
@@ -223,6 +224,7 @@ export const FilterSidebar = ({ filters, onFiltersChange }: FilterSidebarProps) 
                               })
                             }
                             initialFocus
+                            className="pointer-events-auto"
                           />
                         </PopoverContent>
                       </Popover>

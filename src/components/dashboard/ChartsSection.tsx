@@ -216,30 +216,30 @@ export const ChartsSection = ({ filters }: ChartsSectionProps) => {
                 <Line 
                   type="monotone" 
                   dataKey="error" 
-                  stroke="#ef4444" 
+                  stroke="hsl(var(--log-error))" 
                   strokeWidth={2}
-                  dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
+                  dot={{ fill: "hsl(var(--log-error))", strokeWidth: 2, r: 4 }}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="warning" 
-                  stroke="#f59e0b" 
+                  stroke="hsl(var(--log-warning))" 
                   strokeWidth={2}
-                  dot={{ fill: "#f59e0b", strokeWidth: 2, r: 4 }}
+                  dot={{ fill: "hsl(var(--log-warning))", strokeWidth: 2, r: 4 }}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="info" 
-                  stroke="#3b82f6" 
+                  stroke="hsl(var(--log-info))" 
                   strokeWidth={2}
-                  dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                  dot={{ fill: "hsl(var(--log-info))", strokeWidth: 2, r: 4 }}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="debug" 
-                  stroke="#6b7280" 
+                  stroke="hsl(var(--log-debug))" 
                   strokeWidth={2}
-                  dot={{ fill: "#6b7280", strokeWidth: 2, r: 4 }}
+                  dot={{ fill: "hsl(var(--log-debug))", strokeWidth: 2, r: 4 }}
                 />
               </LineChart>
             </ResponsiveContainer>
