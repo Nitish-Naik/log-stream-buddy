@@ -61,19 +61,22 @@ export const LiveStream = ({
   const clearUserLogs = useMutation(api.functions.logs.clearUserLogs);
   const storedLogs = useQuery(api.functions.logs.getLogs, user ? { userId: user.userId, limit: 100000 } : "skip");
 
-  // Load stored logs when component mounts or user changes
+    // Load stored logs when component mounts, user changes, or storedLogs updates
   useEffect(() => {
     if (storedLogs && user) {
       const formattedLogs: StreamLog[] = storedLogs.map(log => ({
         id: log._id,
         timestamp: new Date(log.timestamp),
-        level: log.level,
+        level: log.level as StreamLog["level"],
         message: log.message,
         app_name: log.app_name,
-        meta: log.meta,
+        meta: log.meta
       }));
       setLogs(formattedLogs);
       setMessageCount(formattedLogs.length);
+    } else if (storedLogs && storedLogs.length === 0) {
+      setLogs([]);
+      setMessageCount(0);
     }
   }, [storedLogs, user, setMessageCount]);
 
@@ -132,22 +135,12 @@ export const LiveStream = ({
     return () => clearInterval(interval);
   }, [isStreaming, user, storeLog, messageCount, setMessageCount]);
 
-  // Load stored logs on component mount and when storedLogs changes
+  // Auto-scroll to bottom when new logs arrive
   useEffect(() => {
-    if (storedLogs && storedLogs.length > 0) {
-      const formattedLogs: StreamLog[] = storedLogs.map(log => ({
-        id: log._id,
-        timestamp: new Date(log.timestamp),
-        level: log.level as StreamLog["level"],
-        message: log.message,
-        app_name: log.app_name,
-        meta: log.meta
-      }));
-      setLogs(formattedLogs);
-    } else if (storedLogs && storedLogs.length === 0) {
-      setLogs([]);
+    if (autoScroll && scrollRef.current && logs.length > 0) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [storedLogs]);
+  }, [logs, autoScroll]);
 
   const handleStart = () => {
     if (!user) {

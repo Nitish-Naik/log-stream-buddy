@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Users, UserPlus, MoreHorizontal, Mail, Shield, Eye, Edit, Trash2, Crown, Key } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const teamMembers = [
   {
@@ -77,9 +79,50 @@ const roles = [
 ];
 
 const TeamManagement = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("viewer");
+
+  // Use static team members data
+  const teamMembersData = teamMembers;
+  const pendingInvitations = [];
+
+    const handleInviteMember = async () => {
+    if (!inviteEmail.trim() || !inviteRole || !user?.organizationId) return;
+
+    // Mock invitation - just show success message
+    toast({
+      title: "Invitation sent",
+      description: `An invitation has been sent to ${inviteEmail}`,
+    });
+
+    setShowInviteDialog(false);
+    setInviteEmail("");
+    setInviteRole("viewer");
+  };
+
+    const handleUpdateRole = async (memberId: string, newRole: "admin" | "developer" | "viewer") => {
+    // Mock role update - just show success message
+    toast({
+      title: "Role updated",
+      description: "Team member role has been updated successfully",
+    });
+  };
+
+    const handleRemoveMember = async (memberId: string) => {
+    // Mock member removal - just show success message
+    toast({
+      title: "Member removed",
+      description: "Team member has been removed successfully",
+    });
+  };
+
+  const handleCancelInvitation = async (invitationId: string) => {
+    // Mock invitation cancellation
+    console.log("Cancelled invitation:", invitationId);
+  };
 
   const getRoleIcon = (role: string) => {
     switch (role.toLowerCase()) {
@@ -161,7 +204,7 @@ const TeamManagement = () => {
                 <Button variant="outline" onClick={() => setShowInviteDialog(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => setShowInviteDialog(false)}>
+                <Button onClick={handleInviteMember}>
                   <Mail className="h-4 w-4 mr-2" />
                   Send Invitation
                 </Button>
@@ -178,8 +221,10 @@ const TeamManagement = () => {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">4</div>
-              <p className="text-xs text-muted-foreground">3 active, 1 inactive</p>
+              <div className="text-2xl font-bold">{teamMembersData?.length || 0}</div>
+              <p className="text-xs text-muted-foreground">
+                {teamMembersData?.filter(m => m.status === "Active").length || 0} active, {teamMembersData?.filter(m => m.status === "Inactive").length || 0} inactive
+              </p>
             </CardContent>
           </Card>
 
@@ -189,7 +234,7 @@ const TeamManagement = () => {
               <Crown className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1</div>
+              <div className="text-2xl font-bold">{teamMembersData?.filter(m => m.role === "Admin").length || 0}</div>
               <p className="text-xs text-muted-foreground">Full access members</p>
             </CardContent>
           </Card>
@@ -200,7 +245,7 @@ const TeamManagement = () => {
               <Mail className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">2</div>
+              <div className="text-2xl font-bold">{pendingInvitations?.length || 0}</div>
               <p className="text-xs text-muted-foreground">Awaiting response</p>
             </CardContent>
           </Card>
@@ -225,14 +270,13 @@ const TeamManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {teamMembers.map((member) => (
+                {teamMembersData?.map((member) => (
                   <TableRow key={member.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={member.avatar} />
                           <AvatarFallback>
-                            {member.name.split(' ').map(n => n[0]).join('')}
+                            {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
@@ -244,7 +288,7 @@ const TeamManagement = () => {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {getRoleIcon(member.role)}
-                        <span className="font-medium">{member.role}</span>
+                        <span className="font-medium capitalize">{member.role}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -255,14 +299,14 @@ const TeamManagement = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {member.permissions.slice(0, 2).map((permission) => (
+                        {roles.find(r => r.label === member.role)?.permissions.slice(0, 2).map((permission) => (
                           <Badge key={permission} variant="outline" className="text-xs">
                             {permission.split(':')[1]}
                           </Badge>
                         ))}
-                        {member.permissions.length > 2 && (
+                        {(roles.find(r => r.label === member.role)?.permissions.length || 0) > 2 && (
                           <Badge variant="outline" className="text-xs">
-                            +{member.permissions.length - 2}
+                            +{(roles.find(r => r.label === member.role)?.permissions.length || 0) - 2}
                           </Badge>
                         )}
                       </div>
@@ -275,7 +319,12 @@ const TeamManagement = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            const newRole = prompt("Enter new role (Admin, Developer, Viewer):", member.role);
+                            if (newRole && ["Admin", "Developer", "Viewer"].includes(newRole)) {
+                              handleUpdateRole(member.id, newRole.toLowerCase() as "admin" | "developer" | "viewer");
+                            }
+                          }}>
                             <Edit className="h-4 w-4 mr-2" />
                             Edit Role
                           </DropdownMenuItem>
@@ -284,7 +333,10 @@ const TeamManagement = () => {
                             Manage Permissions
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
+                          <DropdownMenuItem 
+                            className="text-destructive" 
+                            onClick={() => handleRemoveMember(member.id)}
+                          >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Remove Member
                           </DropdownMenuItem>
@@ -292,7 +344,13 @@ const TeamManagement = () => {
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
+                )) || (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      No team members found
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>

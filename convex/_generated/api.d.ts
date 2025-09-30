@@ -16,6 +16,7 @@ import type {
 import type * as functions_auth from "../functions/auth.js";
 import type * as functions_hello from "../functions/hello.js";
 import type * as functions_logs from "../functions/logs.js";
+import type * as functions_team from "../functions/team.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   "functions/auth": typeof functions_auth;
   "functions/hello": typeof functions_hello;
   "functions/logs": typeof functions_logs;
+  "functions/team": typeof functions_team;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

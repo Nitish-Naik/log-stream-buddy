@@ -7,20 +7,25 @@ export const storeLog = mutation({
     level: v.union(v.literal("error"), v.literal("warning"), v.literal("info"), v.literal("debug")),
     message: v.string(),
     app_name: v.string(),
-    userId: v.string(),
-    organization: v.string(),
+    userId: v.id("users"),
+    organizationId: v.optional(v.id("organizations")),
     meta: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    const logId = await ctx.db.insert("logs", {
+    const logDoc: Record<string, unknown> = {
       timestamp: args.timestamp,
       level: args.level,
       message: args.message,
       app_name: args.app_name,
       userId: args.userId,
-      organization: args.organization,
       meta: args.meta,
-    });
+    };
+
+    if (args.organizationId) {
+      logDoc.organizationId = args.organizationId;
+    }
+
+    const logId = await ctx.db.insert("logs", logDoc);
 
     return logId;
   },
@@ -28,7 +33,7 @@ export const storeLog = mutation({
 
 export const getLogs = query({
   args: {
-    userId: v.string(),
+    userId: v.id("users"),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -44,7 +49,7 @@ export const getLogs = query({
 
 export const getLogsByDateRange = query({
   args: {
-    userId: v.string(),
+    userId: v.id("users"),
     startDate: v.number(),
     endDate: v.number(),
     limit: v.optional(v.number()),
@@ -68,7 +73,7 @@ export const getLogsByDateRange = query({
 
 export const getAnalyticsData = query({
   args: {
-    userId: v.string(),
+    userId: v.id("users"),
     days: v.optional(v.number()), // Number of days to look back
   },
   handler: async (ctx, args) => {
@@ -156,7 +161,7 @@ export const getAnalyticsData = query({
 
 export const getWeeklySummary = query({
   args: {
-    userId: v.string(),
+    userId: v.id("users"),
   },
   handler: async (ctx, args) => {
     const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
@@ -215,7 +220,7 @@ export const getWeeklySummary = query({
 
 export const getLogsStats = query({
   args: {
-    userId: v.string(),
+    userId: v.id("users"),
   },
   handler: async (ctx, args) => {
     const logs = await ctx.db
@@ -259,7 +264,7 @@ export const getLogsStats = query({
 
 export const getLogsByService = query({
   args: {
-    userId: v.string(),
+    userId: v.id("users"),
     appName: v.string(),
     limit: v.optional(v.number()),
   },
@@ -281,7 +286,7 @@ export const getLogsByService = query({
 
 export const getServiceStats = query({
   args: {
-    userId: v.string(),
+    userId: v.id("users"),
     appName: v.string(),
     days: v.optional(v.number()),
   },
@@ -356,7 +361,7 @@ export const getServiceStats = query({
 
 export const getAllServices = query({
   args: {
-    userId: v.string(),
+    userId: v.id("users"),
   },
   handler: async (ctx, args) => {
     const logs = await ctx.db
@@ -391,7 +396,7 @@ export const getAllServices = query({
 
 export const getLogsByServiceAndDateRange = query({
   args: {
-    userId: v.string(),
+    userId: v.id("users"),
     appName: v.string(),
     startDate: v.number(),
     endDate: v.number(),
@@ -412,5 +417,24 @@ export const getLogsByServiceAndDateRange = query({
       .take(args.limit || 1000);
 
     return logs;
+  },
+});
+
+export const clearUserLogs = mutation({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // Get all logs for the user
+    const logs = await ctx.db
+      .query("logs")
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .collect();
+
+    // Delete all logs for the user
+    const deletePromises = logs.map(log => ctx.db.delete(log._id));
+    await Promise.all(deletePromises);
+
+    return { deletedCount: logs.length };
   },
 });

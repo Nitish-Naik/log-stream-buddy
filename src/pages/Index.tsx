@@ -1,9 +1,11 @@
+
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ChartsSection } from "@/components/dashboard/ChartsSection";
 import { LogsTable } from "@/components/dashboard/LogsTable";
 import { LiveStream } from "@/components/dashboard/LiveStream";
 import { FilterPanel } from "@/components/dashboard/FilterPanel";
+// import { AIInsights } from "@/components/dashboard/AIInsights";
 import { Button } from "@/components/ui/button";
 
 export interface LogFilters {
@@ -46,6 +48,11 @@ const Index = () => {
         <div className="flex-1 min-w-0">
           {/* Charts Section */}
           <ChartsSection filters={filters} />
+
+          {/* AI Insights Section */}
+          {/* <div className="mb-6">
+            <AIInsights />
+          </div> */}
 
           {/* Tab Navigation */}
           <div className="flex items-center gap-4 mb-6">

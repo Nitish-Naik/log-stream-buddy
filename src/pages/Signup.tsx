@@ -39,7 +39,7 @@ export default function AuthForm() {
         setOrganization("");
       } else {
         const result = await signIn({ email, password });
-        login(result);
+        login({ userId: result.userId, organizationId: result.organizationId });
         navigate("/dashboard");
       }
     } catch (err) {

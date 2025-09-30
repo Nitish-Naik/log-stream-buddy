@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 interface User {
   userId: string;
-  organization: string;
+  organizationId: string;
 }
 
 interface AuthContextType {
@@ -18,7 +18,7 @@ export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
-  }
+  } 
   return context;
 };
 

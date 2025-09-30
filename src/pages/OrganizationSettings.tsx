@@ -1,5 +1,5 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,14 +12,87 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Building2, Save, Upload, Bell, Shield, CreditCard, Key, AlertTriangle, Trash2, Mail, Clock, Database, Zap } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const OrganizationSettings = () => {
-  const [orgName, setOrgName] = useState("Acme Corp");
-  const [orgDescription, setOrgDescription] = useState("Leading technology company focused on innovation and excellence.");
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [alertsEnabled, setAlertsEnabled] = useState(true);
-  const [retentionPeriod, setRetentionPeriod] = useState("90");
-  const [timezone, setTimezone] = useState("America/New_York");
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  // Static organization data
+  const organization = {
+    name: "Your Organization",
+    description: "A sample organization for log management",
+    settings: {
+      notificationsEnabled: true,
+      alertsEnabled: true,
+      retentionPeriod: "90",
+      timezone: "America/New_York",
+      errorRateThreshold: "5",
+      responseTimeThreshold: "1000",
+      dailyReportTime: "9:00",
+      reportFormat: "pdf",
+      twoFactorEnabled: false,
+      ipRestrictionsEnabled: false,
+    }
+  };
+
+  const organizationStats = {
+    totalLogs: 2500000,
+    avgIngestionRate: 150,
+    activeMembers: 12,
+    uptime: 99.9
+  };
+
+  const apiKeys = [
+    {
+      id: "1",
+      name: "Production API",
+      key: "logs_sk_prod_1234567890abcdef",
+      createdAt: Date.now() - 86400000, // 1 day ago
+      lastUsed: Date.now() - 3600000, // 1 hour ago
+    }
+  ];
+
+  // Initialize form with static data
+  const [orgName, setOrgName] = useState(organization.name);
+  const [orgDescription, setOrgDescription] = useState(organization.description);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(organization.settings.notificationsEnabled);
+  const [alertsEnabled, setAlertsEnabled] = useState(organization.settings.alertsEnabled);
+  const [retentionPeriod, setRetentionPeriod] = useState(organization.settings.retentionPeriod);
+  const [timezone, setTimezone] = useState(organization.settings.timezone);
+  const [errorRateThreshold, setErrorRateThreshold] = useState(organization.settings.errorRateThreshold);
+  const [responseTimeThreshold, setResponseTimeThreshold] = useState(organization.settings.responseTimeThreshold);
+  const [dailyReportTime, setDailyReportTime] = useState(organization.settings.dailyReportTime);
+  const [reportFormat, setReportFormat] = useState(organization.settings.reportFormat);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(organization.settings.twoFactorEnabled);
+  const [ipRestrictionsEnabled, setIpRestrictionsEnabled] = useState(organization.settings.ipRestrictionsEnabled);
+  const [newApiKeyName, setNewApiKeyName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSaveSettings = async () => {
+    setIsLoading(true);
+    // Mock save - just show success message
+    setTimeout(() => {
+      toast({
+        title: "Settings saved",
+        description: "Your organization settings have been updated successfully",
+      });
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  const handleGenerateApiKey = async () => {
+    if (!newApiKeyName.trim()) return;
+
+    // Mock API key generation
+    toast({
+      title: "API key generated",
+      description: "A new API key has been created for your organization",
+    });
+
+    setNewApiKeyName("");
+  };
 
   return (
     <AppLayout>
@@ -31,9 +104,9 @@ const OrganizationSettings = () => {
             <h1 className="text-3xl font-bold text-foreground">Organization Settings</h1>
             <p className="text-muted-foreground">Manage your organization's configuration and preferences</p>
           </div>
-          <Button>
+          <Button onClick={handleSaveSettings} disabled={isLoading}>
             <Save className="h-4 w-4 mr-2" />
-            Save Changes
+            {isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </div>
 
@@ -76,6 +149,7 @@ const OrganizationSettings = () => {
                       id="orgName"
                       value={orgName}
                       onChange={(e) => setOrgName(e.target.value)}
+                      placeholder="Enter organization name"
                     />
                   </div>
                   <div className="space-y-2">
@@ -127,22 +201,22 @@ const OrganizationSettings = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-gradient-surface rounded-lg">
                     <Database className="h-8 w-8 text-primary mx-auto mb-2" />
-                    <div className="text-2xl font-bold">2.4M</div>
+                    <div className="text-2xl font-bold">{organizationStats?.totalLogs?.toLocaleString() || 0}</div>
                     <div className="text-sm text-muted-foreground">Total Logs</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-surface rounded-lg">
                     <Zap className="h-8 w-8 text-primary mx-auto mb-2" />
-                    <div className="text-2xl font-bold">156/s</div>
+                    <div className="text-2xl font-bold">{organizationStats?.avgIngestionRate || 0}/s</div>
                     <div className="text-sm text-muted-foreground">Avg. Ingestion Rate</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-surface rounded-lg">
                     <Building2 className="h-8 w-8 text-primary mx-auto mb-2" />
-                    <div className="text-2xl font-bold">12</div>
+                    <div className="text-2xl font-bold">{organizationStats?.activeMembers || 0}</div>
                     <div className="text-sm text-muted-foreground">Active Services</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-surface rounded-lg">
                     <Clock className="h-8 w-8 text-primary mx-auto mb-2" />
-                    <div className="text-2xl font-bold">99.9%</div>
+                    <div className="text-2xl font-bold">{organizationStats?.uptime || 0}%</div>
                     <div className="text-sm text-muted-foreground">Uptime</div>
                   </div>
                 </div>
@@ -188,11 +262,19 @@ const OrganizationSettings = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Error Rate Threshold (%)</Label>
-                      <Input type="number" placeholder="5" />
+                      <Input
+                        type="number"
+                        value={errorRateThreshold}
+                        onChange={(e) => setErrorRateThreshold(e.target.value)}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label>Response Time Threshold (ms)</Label>
-                      <Input type="number" placeholder="1000" />
+                      <Input
+                        type="number"
+                        value={responseTimeThreshold}
+                        onChange={(e) => setResponseTimeThreshold(e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
@@ -204,13 +286,14 @@ const OrganizationSettings = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Delivery Time</Label>
-                      <Select>
+                      <Select value={dailyReportTime} onValueChange={setDailyReportTime}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select time" />
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="6:00">6:00 AM</SelectItem>
                           <SelectItem value="8:00">8:00 AM</SelectItem>
+                          <SelectItem value="9:00">9:00 AM</SelectItem>
                           <SelectItem value="10:00">10:00 AM</SelectItem>
                           <SelectItem value="12:00">12:00 PM</SelectItem>
                         </SelectContent>
@@ -218,9 +301,9 @@ const OrganizationSettings = () => {
                     </div>
                     <div className="space-y-2">
                       <Label>Report Format</Label>
-                      <Select>
+                      <Select value={reportFormat} onValueChange={setReportFormat}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select format" />
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="pdf">PDF</SelectItem>
@@ -297,17 +380,33 @@ const OrganizationSettings = () => {
                     API Keys
                   </h3>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 border border-border rounded-lg bg-gradient-surface">
-                      <div>
-                        <div className="font-mono text-sm">logs_sk_live_••••••••••••4e5f</div>
-                        <div className="text-xs text-muted-foreground">Created Jan 15, 2024 • Last used 2 hours ago</div>
+                    {apiKeys?.map((apiKey: { id: string; name: string; key: string; createdAt: number; lastUsed?: number }) => (
+                      <div key={apiKey.id} className="flex items-center justify-between p-3 border border-border rounded-lg bg-gradient-surface">
+                        <div>
+                          <div className="font-mono text-sm">logs_sk_••••••••••••{apiKey.key.slice(-4)}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {apiKey.name} • Created {new Date(apiKey.createdAt).toLocaleDateString()} • Last used {apiKey.lastUsed ? new Date(apiKey.lastUsed).toLocaleDateString() : "Never"}
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm">Regenerate</Button>
                       </div>
-                      <Button variant="outline" size="sm">Regenerate</Button>
+                    ))}
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="API Key name"
+                        value={newApiKeyName}
+                        onChange={(e) => setNewApiKeyName(e.target.value)}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateApiKey}
+                        disabled={!newApiKeyName.trim()}
+                      >
+                        <Key className="h-4 w-4 mr-2" />
+                        Generate
+                      </Button>
                     </div>
-                    <Button variant="outline" size="sm">
-                      <Key className="h-4 w-4 mr-2" />
-                      Generate New API Key
-                    </Button>
                   </div>
                 </div>
 
@@ -324,14 +423,20 @@ const OrganizationSettings = () => {
                         <div className="font-medium">Two-Factor Authentication</div>
                         <div className="text-sm text-muted-foreground">Require 2FA for all team members</div>
                       </div>
-                      <Switch />
+                      <Switch
+                        checked={twoFactorEnabled}
+                        onCheckedChange={setTwoFactorEnabled}
+                      />
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <div className="font-medium">IP Restrictions</div>
                         <div className="text-sm text-muted-foreground">Allow access only from specific IP addresses</div>
                       </div>
-                      <Switch />
+                      <Switch
+                        checked={ipRestrictionsEnabled}
+                        onCheckedChange={setIpRestrictionsEnabled}
+                      />
                     </div>
                   </div>
                 </div>
