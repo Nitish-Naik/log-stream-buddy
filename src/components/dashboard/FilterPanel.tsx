@@ -5,22 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarGroupLabel,
-  useSidebar 
-} from "@/components/ui/sidebar";
-import { CalendarIcon, Search, Filter, X } from "lucide-react";
+import { CalendarIcon, Search, Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { LogFilters } from "@/pages/Index";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-interface FilterSidebarProps {
+interface FilterPanelProps {
   filters: LogFilters;
   onFiltersChange: (filters: LogFilters) => void;
+  isOpen: boolean;
+  onToggle: () => void;
 }
 
 const logLevels = [
@@ -39,10 +34,7 @@ const sampleApps = [
   "email-service",
 ];
 
-export const FilterSidebar = ({ filters, onFiltersChange }: FilterSidebarProps) => {
-  const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
-  
+export const FilterPanel = ({ filters, onFiltersChange, isOpen, onToggle }: FilterPanelProps) => {
   const updateFilters = (updates: Partial<LogFilters>) => {
     onFiltersChange({ ...filters, ...updates });
   };
@@ -64,12 +56,30 @@ export const FilterSidebar = ({ filters, onFiltersChange }: FilterSidebarProps) 
     filters.timeRange.to;
 
   return (
-    <Sidebar collapsible="icon" className="border-r">
-      <SidebarContent className="bg-card border-0">
-        {!isCollapsed && (
-          <>
-            <SidebarGroup>
-              <div className="flex items-center justify-between p-4">
+    <>
+      {/* Toggle Button */}
+      <Button
+        onClick={onToggle}
+        variant="outline"
+        size="sm"
+        className="mb-4"
+      >
+        {isOpen ? <ChevronLeft className="h-4 w-4 mr-2" /> : <ChevronRight className="h-4 w-4 mr-2" />}
+        {isOpen ? "Hide Filters" : "Show Filters"}
+      </Button>
+
+      {/* Filter Panel */}
+      <div
+        className={cn(
+          "transition-all duration-300 ease-in-out overflow-hidden",
+          isOpen ? "w-80 opacity-100" : "w-0 opacity-0"
+        )}
+      >
+        <Card className="h-full border-r">
+          <ScrollArea className="h-full">
+            <div className="p-4 space-y-6">
+              {/* Header */}
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Filter className="h-5 w-5 text-primary" />
                   <h2 className="text-lg font-semibold">Filters</h2>
@@ -86,29 +96,25 @@ export const FilterSidebar = ({ filters, onFiltersChange }: FilterSidebarProps) 
                   </Button>
                 )}
               </div>
-            </SidebarGroup>
 
-            <SidebarGroup>
-              <SidebarGroupLabel>Search</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <Card className="p-4 bg-gradient-surface mx-4 mb-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search in messages..."
-                      value={filters.search}
-                      onChange={(e) => updateFilters({ search: e.target.value })}
-                      className="pl-10"
-                    />
-                  </div>
-                </Card>
-              </SidebarGroupContent>
-            </SidebarGroup>
+              {/* Search */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Search</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search in messages..."
+                    value={filters.search}
+                    onChange={(e) => updateFilters({ search: e.target.value })}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
 
-            <SidebarGroup>
-              <SidebarGroupLabel>Log Levels</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <Card className="p-4 bg-gradient-surface mx-4 mb-4">
+              {/* Log Levels */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Log Levels</Label>
+                <Card className="p-3 bg-gradient-surface">
                   <div className="space-y-3">
                     {logLevels.map((level) => (
                       <div key={level.value} className="flex items-center space-x-3">
@@ -136,41 +142,41 @@ export const FilterSidebar = ({ filters, onFiltersChange }: FilterSidebarProps) 
                     ))}
                   </div>
                 </Card>
-              </SidebarGroupContent>
-            </SidebarGroup>
+              </div>
 
-            <SidebarGroup>
-              <SidebarGroupLabel>Applications</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <Card className="p-4 bg-gradient-surface mx-4 mb-4">
-                  <div className="space-y-3 max-h-48 overflow-y-auto">
-                    {sampleApps.map((app) => (
-                      <div key={app} className="flex items-center space-x-3">
-                        <Checkbox
-                          id={app}
-                          checked={filters.appName.includes(app)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              updateFilters({ appName: [...filters.appName, app] });
-                            } else {
-                              updateFilters({ appName: filters.appName.filter(a => a !== app) });
-                            }
-                          }}
-                        />
-                        <Label htmlFor={app} className="cursor-pointer font-mono text-sm">
-                          {app}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
+              {/* Applications */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Applications</Label>
+                <Card className="p-3 bg-gradient-surface">
+                  <ScrollArea className="h-48">
+                    <div className="space-y-3 pr-4">
+                      {sampleApps.map((app) => (
+                        <div key={app} className="flex items-center space-x-3">
+                          <Checkbox
+                            id={app}
+                            checked={filters.appName.includes(app)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                updateFilters({ appName: [...filters.appName, app] });
+                              } else {
+                                updateFilters({ appName: filters.appName.filter(a => a !== app) });
+                              }
+                            }}
+                          />
+                          <Label htmlFor={app} className="cursor-pointer font-mono text-sm">
+                            {app}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </Card>
-              </SidebarGroupContent>
-            </SidebarGroup>
+              </div>
 
-            <SidebarGroup>
-              <SidebarGroupLabel>Time Range</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <Card className="p-4 bg-gradient-surface mx-4 mb-4">
+              {/* Time Range */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Time Range</Label>
+                <Card className="p-3 bg-gradient-surface">
                   <div className="space-y-3">
                     <div>
                       <Label className="text-xs text-muted-foreground mb-1 block">From</Label>
@@ -195,7 +201,6 @@ export const FilterSidebar = ({ filters, onFiltersChange }: FilterSidebarProps) 
                               })
                             }
                             initialFocus
-                            className="pointer-events-auto"
                           />
                         </PopoverContent>
                       </Popover>
@@ -224,24 +229,17 @@ export const FilterSidebar = ({ filters, onFiltersChange }: FilterSidebarProps) 
                               })
                             }
                             initialFocus
-                            className="pointer-events-auto"
                           />
                         </PopoverContent>
                       </Popover>
                     </div>
                   </div>
                 </Card>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
-        
-        {isCollapsed && (
-          <div className="flex flex-col items-center py-4">
-            <Filter className="h-5 w-5 text-primary" />
-          </div>
-        )}
-      </SidebarContent>
-    </Sidebar>
+              </div>
+            </div>
+          </ScrollArea>
+        </Card>
+      </div>
+    </>
   );
 };

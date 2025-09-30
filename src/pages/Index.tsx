@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { ChartsSection } from "@/components/dashboard/ChartsSection";
 import { LogsTable } from "@/components/dashboard/LogsTable";
 import { LiveStream } from "@/components/dashboard/LiveStream";
-import { FilterSidebar } from "@/components/dashboard/FilterSidebar";
+import { FilterPanel } from "@/components/dashboard/FilterPanel";
 import { Button } from "@/components/ui/button";
 
 export interface LogFilters {
@@ -18,6 +18,7 @@ export interface LogFilters {
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<"table" | "live">("table");
+  const [isFilterOpen, setIsFilterOpen] = useState(true);
   const [filters, setFilters] = useState<LogFilters>({
     level: [],
     appName: [],
@@ -30,15 +31,17 @@ const Index = () => {
 
   return (
     <AppLayout>
-      <div className="flex min-h-full w-full">
-        {/* Filter Sidebar */}
-        <FilterSidebar 
+      <div className="flex gap-4 p-6 w-full">
+        {/* Filter Panel */}
+        <FilterPanel 
           filters={filters} 
-          onFiltersChange={setFilters} 
+          onFiltersChange={setFilters}
+          isOpen={isFilterOpen}
+          onToggle={() => setIsFilterOpen(!isFilterOpen)}
         />
         
         {/* Main Content */}
-        <div className="flex-1 p-6">
+        <div className="flex-1 min-w-0">
           {/* Charts Section */}
           <ChartsSection filters={filters} />
 
