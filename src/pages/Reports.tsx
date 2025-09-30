@@ -226,50 +226,53 @@ const Reports = () => {
         <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="text-3xl font-bold text-foreground">Reports & Analytics</h1>
             <p className="text-muted-foreground">Daily reports, trends, and insights for your organization</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
             {/* Date Range Picker */}
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-[240px] justify-start text-left font-normal",
+                    "w-full sm:w-[200px] lg:w-[240px] justify-start text-left font-normal",
                     !dateRange.from && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange.from ? (
-                    dateRange.to ? (
-                      <>
-                        {format(dateRange.from, "LLL dd, y")} -{" "}
-                        {format(dateRange.to, "LLL dd, y")}
-                      </>
+                  <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">
+                    {dateRange.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "LLL dd, y")} -{" "}
+                          {format(dateRange.to, "LLL dd, y")}
+                        </>
+                      ) : (
+                        format(dateRange.from, "LLL dd, y")
+                      )
                     ) : (
-                      format(dateRange.from, "LLL dd, y")
-                    )
-                  ) : (
-                    <span>Pick a date range</span>
-                  )}
+                      <span>Pick a date range</span>
+                    )}
+                  </span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
                 <Calendar
                   initialFocus
                   mode="range"
-                  defaultMonth={dateRange.from}
-                  selected={{ from: dateRange.from!, to: dateRange.to! }}
+                  defaultMonth={dateRange.from || new Date()}
+                  selected={dateRange.from && dateRange.to ? { from: dateRange.from, to: dateRange.to } : undefined}
                   onSelect={(range) => setDateRange({ from: range?.from || null, to: range?.to || null })}
-                  numberOfMonths={2}
+                  numberOfMonths={1}
+                  className="max-w-[320px]"
                 />
               </PopoverContent>
             </Popover>
 
             <Select value={reportType} onValueChange={setReportType}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-full sm:w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -278,14 +281,19 @@ const Reports = () => {
                 <SelectItem value="monthly">Monthly</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={() => exportAllReports()}>
-              <Download className="h-4 w-4 mr-2" />
-              Export All
-            </Button>
-            <Button>
-              <Mail className="h-4 w-4 mr-2" />
-              Email Schedule
-            </Button>
+
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => exportAllReports()} className="flex-1 sm:flex-none">
+                <Download className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Export All</span>
+                <span className="sm:hidden">Export</span>
+              </Button>
+              <Button className="flex-1 sm:flex-none">
+                <Mail className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Email Schedule</span>
+                <span className="sm:hidden">Email</span>
+              </Button>
+            </div>
           </div>
         </div>
 

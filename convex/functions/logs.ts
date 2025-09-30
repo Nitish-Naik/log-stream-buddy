@@ -49,7 +49,7 @@ export const getLogs = query({
 
 export const getLogsByDateRange = query({
   args: {
-    userId: v.id("users"),
+    userId: v.string(), // Changed from v.id("users") to v.string()
     startDate: v.number(),
     endDate: v.number(),
     limit: v.optional(v.number()),
@@ -73,7 +73,7 @@ export const getLogsByDateRange = query({
 
 export const getAnalyticsData = query({
   args: {
-    userId: v.id("users"),
+    userId: v.string(), // Changed from v.id("users") to v.string()
     days: v.optional(v.number()), // Number of days to look back
   },
   handler: async (ctx, args) => {
@@ -161,7 +161,7 @@ export const getAnalyticsData = query({
 
 export const getWeeklySummary = query({
   args: {
-    userId: v.id("users"),
+    userId: v.string(), // Changed from v.id("users") to v.string()
   },
   handler: async (ctx, args) => {
     const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
