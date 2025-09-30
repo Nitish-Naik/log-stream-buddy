@@ -24,78 +24,109 @@ import { LogFilters } from "@/pages/Index";
 import { LogLevelBadge } from "@/components/dashboard/LogLevelBadge";
 import { LogDetailModal } from "@/components/dashboard/LogDetailModal";
 import { format } from "date-fns";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LogsTableProps {
   filters: LogFilters;
 }
 
 interface LogEntry {
-  id: string;
-  timestamp: Date;
+  _id: string;
+  timestamp: number;
   level: "error" | "warning" | "info" | "debug";
   message: string;
   app_name: string;
-  meta?: Record<string, any>;
+  userId: string;
+  organization: string;
+  meta?: { [key: string]: unknown };
 }
 
 // Sample data - in real app this would come from your API
 const sampleLogs: LogEntry[] = [
   {
-    id: "1",
-    timestamp: new Date("2025-09-20T10:30:45Z"),
+    _id: "1",
+    timestamp: new Date("2025-09-20T10:30:45Z").getTime(),
     level: "error",
     message: "Failed to connect to database: connection timeout after 30s",
     app_name: "payment-service",
+    userId: "user_123",
+    organization: "test-org",
     meta: { retryCount: 3, connectionPool: "primary" }
   },
   {
-    id: "2", 
-    timestamp: new Date("2025-09-20T10:30:42Z"),
+    _id: "2", 
+    timestamp: new Date("2025-09-20T10:30:42Z").getTime(),
     level: "warning",
     message: "High memory usage detected: 85% of allocated heap",
     app_name: "user-service",
+    userId: "user_123",
+    organization: "test-org",
     meta: { memoryUsage: "850MB", heapSize: "1GB" }
   },
   {
-    id: "3",
-    timestamp: new Date("2025-09-20T10:30:40Z"),
+    _id: "3",
+    timestamp: new Date("2025-09-20T10:30:40Z").getTime(),
     level: "info",
     message: "User authentication successful",
     app_name: "auth-service", 
+    userId: "user_123",
+    organization: "test-org",
     meta: { userId: "user_123", sessionId: "sess_abc" }
   },
   {
-    id: "4",
-    timestamp: new Date("2025-09-20T10:30:38Z"),
+    _id: "4",
+    timestamp: new Date("2025-09-20T10:30:38Z").getTime(),
     level: "debug",
     message: "Processing webhook payload from Stripe",
     app_name: "payment-service",
+    userId: "user_123",
+    organization: "test-org",
     meta: { eventType: "payment.succeeded", customerId: "cus_123" }
   },
   {
-    id: "5",
-    timestamp: new Date("2025-09-20T10:30:35Z"),
+    _id: "5",
+    timestamp: new Date("2025-09-20T10:30:35Z").getTime(),
     level: "error",
     message: "Email delivery failed: SMTP server unreachable",
     app_name: "notification-service",
+    userId: "user_123",
+    organization: "test-org",
     meta: { recipient: "user@example.com", templateId: "welcome" }
   },
   {
-    id: "6",
-    timestamp: new Date("2025-09-20T10:30:32Z"),
+    _id: "6",
+    timestamp: new Date("2025-09-20T10:30:32Z").getTime(),
     level: "info",
     message: "Cache miss for user profile, fetching from database",
     app_name: "user-service",
+    userId: "user_123",
+    organization: "test-org",
     meta: { cacheKey: "profile_user_123", ttl: 3600 }
   }
 ];
 
 export const LogsTable = ({ filters }: LogsTableProps) => {
+  const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(50);
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  // Fetch logs from database
+  const dbLogs = useQuery(api.functions.logs.getLogs, user ? { userId: user.userId, limit: 1000 } : "skip");
+
+  // Transform database logs to match component interface
+  const transformLogForModal = (log: LogEntry) => ({
+    id: log._id,
+    timestamp: new Date(log.timestamp),
+    level: log.level,
+    message: log.message,
+    app_name: log.app_name,
+    meta: log.meta
+  });
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -110,7 +141,7 @@ export const LogsTable = ({ filters }: LogsTableProps) => {
   };
 
   // Filter logs based on current filters
-  const filteredLogs = sampleLogs.filter(log => {
+  const filteredLogs = (dbLogs || sampleLogs).filter(log => {
     if (filters.level.length > 0 && !filters.level.includes(log.level)) return false;
     if (filters.appName.length > 0 && !filters.appName.includes(log.app_name)) return false;
     if (filters.search && !log.message.toLowerCase().includes(filters.search.toLowerCase())) return false;
@@ -170,11 +201,11 @@ export const LogsTable = ({ filters }: LogsTableProps) => {
             </TableHeader>
             <TableBody>
               {paginatedLogs.map((log) => (
-                <TableRow key={log.id} className="border-border hover:bg-muted/50">
+                <TableRow key={log._id} className="border-border hover:bg-muted/50">
                   <TableCell className="font-mono text-xs text-muted-foreground">
-                    {format(log.timestamp, "HH:mm:ss.SSS")}
+                    {format(new Date(log.timestamp), "HH:mm:ss.SSS")}
                     <div className="text-xs opacity-60">
-                      {format(log.timestamp, "MMM dd")}
+                      {format(new Date(log.timestamp), "MMM dd")}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -270,7 +301,7 @@ export const LogsTable = ({ filters }: LogsTableProps) => {
 
       {/* Log Detail Modal */}
       <LogDetailModal 
-        log={selectedLog}
+        log={selectedLog ? transformLogForModal(selectedLog) : null}
         open={isDetailModalOpen}
         onClose={() => {
           setIsDetailModalOpen(false);

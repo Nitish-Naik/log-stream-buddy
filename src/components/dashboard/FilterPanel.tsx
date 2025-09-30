@@ -64,8 +64,9 @@ export const FilterPanel = ({ filters, onFiltersChange, isOpen, onToggle }: Filt
         size="sm"
         className="mb-4"
       >
-        {isOpen ? <ChevronLeft className="h-4 w-4 mr-2" /> : <ChevronRight className="h-4 w-4 mr-2" />}
-        {isOpen ? "Hide Filters" : "Show Filters"}
+        {isOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        {isOpen ? "" : ""}
+        {/* {isOpen ? "Hide Filters" : "Show Filters"} */}
       </Button>
 
       {/* Filter Panel */}

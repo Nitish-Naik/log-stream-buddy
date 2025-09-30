@@ -19,6 +19,8 @@ export interface LogFilters {
 const Index = () => {
   const [activeTab, setActiveTab] = useState<"table" | "live">("table");
   const [isFilterOpen, setIsFilterOpen] = useState(true);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [messageCount, setMessageCount] = useState(0);
   const [filters, setFilters] = useState<LogFilters>({
     level: [],
     appName: [],
@@ -63,7 +65,14 @@ const Index = () => {
 
           {/* Content Tabs */}
           {activeTab === "table" && <LogsTable filters={filters} />}
-          {activeTab === "live" && <LiveStream />}
+          {activeTab === "live" && (
+            <LiveStream 
+              isStreaming={isStreaming} 
+              onStreamingChange={setIsStreaming}
+              messageCount={messageCount}
+              onMessageCountChange={setMessageCount}
+            />
+          )}
         </div>
       </div>
     </AppLayout>

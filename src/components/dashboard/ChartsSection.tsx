@@ -1,7 +1,11 @@
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { TrendingUp, BarChart3, PieChart as PieChartIcon, Activity } from "lucide-react";
+import { TrendingUp, BarChart3, PieChart as PieChartIcon, Activity, Database, Zap, Clock } from "lucide-react";
 import { LogFilters } from "@/pages/Index";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ChartsSectionProps {
   filters: LogFilters;
@@ -15,15 +19,6 @@ const logsByLevel = [
   { level: "Debug", count: 2876, color: "#6b7280" },
 ];
 
-const logsOverTime = [
-  { time: "00:00", error: 12, warning: 34, info: 145, debug: 98 },
-  { time: "04:00", error: 8, warning: 28, info: 167, debug: 112 },
-  { time: "08:00", error: 23, warning: 45, info: 234, debug: 145 },
-  { time: "12:00", error: 45, warning: 67, info: 312, debug: 178 },
-  { time: "16:00", error: 34, warning: 56, info: 287, debug: 156 },
-  { time: "20:00", error: 28, warning: 41, info: 198, debug: 134 },
-];
-
 const appDistribution = [
   { name: "auth-service", value: 1234, color: "#10b981" },
   { name: "payment-service", value: 876, color: "#3b82f6" },
@@ -34,8 +29,202 @@ const appDistribution = [
 ];
 
 export const ChartsSection = ({ filters }: ChartsSectionProps) => {
+  const { user } = useAuth();
+  
+  // Fetch logs from database
+  const dbLogs = useQuery(api.functions.logs.getLogs, user ? { userId: user.userId, limit: 10000 } : "skip");
+  const logsStats = useQuery(api.functions.logs.getLogsStats, user ? { userId: user.userId } : "skip");
+
+  // State for app distribution that updates every minute
+  const [appDistribution, setAppDistribution] = useState<Array<{name: string, value: number, color: string}>>([]);
+  
+  // State for logs over time that updates every 5 minutes
+  const [logsOverTime, setLogsOverTime] = useState<Array<{time: string, error: number, warning: number, info: number, debug: number}>>([]);
+  
+  // Ref to store current dbLogs value
+  const dbLogsRef = useRef(dbLogs);
+  // Track if we've already shown initial data
+  const hasShownInitialData = useRef(false);
+
+  // Update ref whenever dbLogs changes
+  useEffect(() => {
+    dbLogsRef.current = dbLogs;
+  }, [dbLogs]);
+
+  // Update chart immediately when data first becomes available
+  useEffect(() => {
+    if (dbLogs && dbLogs.length > 0 && !hasShownInitialData.current) {
+      const appCounts: { [key: string]: number } = {};
+      dbLogs.forEach(log => {
+        appCounts[log.app_name] = (appCounts[log.app_name] || 0) + 1;
+      });
+
+      const newAppDistribution = Object.entries(appCounts).map(([name, value], index) => ({
+        name,
+        value,
+        color: [
+          "#10b981", "#3b82f6", "#f59e0b", "#ef4444", 
+          "#8b5cf6", "#06b6d4", "#84cc16", "#f97316"
+        ][index % 8]
+      }));
+
+      setAppDistribution(newAppDistribution);
+      hasShownInitialData.current = true;
+    }
+  }, [dbLogs]);
+
+  // Update app distribution every minute instead of on every log change
+  useEffect(() => {
+    const updateAppDistribution = () => {
+      const currentLogs = dbLogsRef.current;
+      if (currentLogs && currentLogs.length > 0) {
+        const appCounts: { [key: string]: number } = {};
+        currentLogs.forEach(log => {
+          appCounts[log.app_name] = (appCounts[log.app_name] || 0) + 1;
+        });
+
+        const newAppDistribution = Object.entries(appCounts).map(([name, value], index) => ({
+          name,
+          value,
+          color: [
+            "#10b981", "#3b82f6", "#f59e0b", "#ef4444", 
+            "#8b5cf6", "#06b6d4", "#84cc16", "#f97316"
+          ][index % 8]
+        }));
+
+        setAppDistribution(newAppDistribution);
+      }
+    };
+
+    // Set up interval to update every minute (don't update immediately here)
+    const interval = setInterval(updateAppDistribution, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, []); // Empty dependency array - only run once on mount
+
+  // Update logs over time every second and when data changes
+  useEffect(() => {
+    const updateLogsOverTime = () => {
+      const currentLogs = dbLogsRef.current;
+      if (currentLogs && currentLogs.length > 0) {
+        // Get logs from the last 24 hours
+        const now = Date.now();
+        const twentyFourHoursAgo = now - (24 * 60 * 60 * 1000);
+        
+        const recentLogs = currentLogs.filter(log => log.timestamp >= twentyFourHoursAgo);
+        
+        // Group logs by hour
+        const hourlyData: { [hour: string]: { error: number; warning: number; info: number; debug: number } } = {};
+        
+        // Initialize all 24 hours with zero counts
+        for (let i = 23; i >= 0; i--) {
+          const hour = new Date(now - (i * 60 * 60 * 1000));
+          const hourKey = hour.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+          }).substring(0, 5); // Get HH:MM format
+          hourlyData[hourKey] = { error: 0, warning: 0, info: 0, debug: 0 };
+        }
+        
+        // Count logs in each hour
+        recentLogs.forEach(log => {
+          const logTime = new Date(log.timestamp);
+          const hourKey = logTime.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+          }).substring(0, 5);
+          
+          if (hourlyData[hourKey]) {
+            hourlyData[hourKey][log.level as keyof typeof hourlyData[string]]++;
+          }
+        });
+        
+        // Convert to array format for the chart
+        const chartData = Object.entries(hourlyData).map(([time, counts]) => ({
+          time,
+          ...counts
+        }));
+        
+        setLogsOverTime(chartData);
+      }
+    };
+
+    // Update immediately when data changes or first becomes available
+    updateLogsOverTime();
+
+    // Set up interval to update every second for real-time feel
+    const interval = setInterval(updateLogsOverTime, 1000); // 1 second
+
+    return () => clearInterval(interval);
+  }, [dbLogs]); // Update when dbLogs changes
+  const totalLogs = dbLogs?.length || 0;
+  const errorCount = dbLogs?.filter(log => log.level === "error").length || 0;
+  const warningCount = dbLogs?.filter(log => log.level === "warning").length || 0;
+  const infoCount = dbLogs?.filter(log => log.level === "info").length || 0;
+  const debugCount = dbLogs?.filter(log => log.level === "debug").length || 0;
+
+  // Prepare data for charts
+  const logsByLevel = [
+    { level: "Error", count: errorCount, color: "#ef4444" },
+    { level: "Warning", count: warningCount, color: "#f59e0b" },
+    { level: "Info", count: infoCount, color: "#3b82f6" },
+    { level: "Debug", count: debugCount, color: "#6b7280" },
+  ];
+
   return (
     <div className="space-y-6 mb-8">
+      {/* Comprehensive Stats Overview */}
+      <Card className="bg-gradient-surface shadow-soft">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Database className="h-5 w-5 text-primary" />
+            Database Statistics
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-primary mb-1">
+                {logsStats?.totalLogs.toLocaleString() || "0"}
+              </div>
+              <div className="text-sm text-muted-foreground">Total Logs in Database</div>
+              <div className="text-xs text-log-success mt-1">All-time accumulated</div>
+            </div>
+
+            <div className="text-center">
+              <div className="text-3xl font-bold text-log-info mb-1">
+                {logsStats?.logsPerMinuteRecent?.toFixed(1) || "0.0"}
+              </div>
+              <div className="text-sm text-muted-foreground">Logs/Minute (5min avg)</div>
+              <div className="text-xs text-log-info mt-1">Current generation rate</div>
+            </div>
+
+            <div className="text-center">
+              <div className="text-3xl font-bold text-log-warning mb-1">
+                {logsStats?.logsPerMinute?.toFixed(1) || "0.0"}
+              </div>
+              <div className="text-sm text-muted-foreground">Logs/Minute (1hr avg)</div>
+              <div className="text-xs text-log-warning mt-1">Hourly average rate</div>
+            </div>
+
+            <div className="text-center">
+              <div className="text-3xl font-bold text-muted-foreground mb-1">
+                {logsStats?.lastLogTimestamp 
+                  ? new Date(logsStats.lastLogTimestamp).toLocaleString() 
+                  : "Never"}
+              </div>
+              <div className="text-sm text-muted-foreground">Last Log Timestamp</div>
+              <div className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1">
+                <Clock className="h-3 w-3" />
+                Most recent activity
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-surface shadow-soft">
@@ -43,10 +232,10 @@ export const ChartsSection = ({ filters }: ChartsSectionProps) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Logs</p>
-                <p className="text-2xl font-bold">8,744</p>
+                <p className="text-2xl font-bold">{totalLogs.toLocaleString()}</p>
                 <p className="text-xs text-log-success flex items-center gap-1">
                   <TrendingUp className="h-3 w-3" />
-                  +12% from yesterday
+                  Real-time data
                 </p>
               </div>
               <Activity className="h-8 w-8 text-primary" />
@@ -59,9 +248,9 @@ export const ChartsSection = ({ filters }: ChartsSectionProps) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Errors</p>
-                <p className="text-2xl font-bold text-log-error">342</p>
+                <p className="text-2xl font-bold text-log-error">{errorCount.toLocaleString()}</p>
                 <p className="text-xs text-log-error">
-                  +5 in last hour
+                  {totalLogs > 0 ? ((errorCount / totalLogs) * 100).toFixed(1) : 0}% of total
                 </p>
               </div>
               <div className="h-8 w-8 bg-log-error-bg rounded-lg flex items-center justify-center">
@@ -76,9 +265,9 @@ export const ChartsSection = ({ filters }: ChartsSectionProps) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Warnings</p>
-                <p className="text-2xl font-bold text-log-warning">1,205</p>
+                <p className="text-2xl font-bold text-log-warning">{warningCount.toLocaleString()}</p>
                 <p className="text-xs text-log-warning">
-                  -2% from yesterday
+                  {totalLogs > 0 ? ((warningCount / totalLogs) * 100).toFixed(1) : 0}% of total
                 </p>
               </div>
               <div className="h-8 w-8 bg-log-warning-bg rounded-lg flex items-center justify-center">
@@ -92,21 +281,19 @@ export const ChartsSection = ({ filters }: ChartsSectionProps) => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Active Apps</p>
-                <p className="text-2xl font-bold">12</p>
-                <p className="text-xs text-log-success">
-                  All healthy
+                <p className="text-sm font-medium text-muted-foreground">Info Logs</p>
+                <p className="text-2xl font-bold text-log-info">{infoCount.toLocaleString()}</p>
+                <p className="text-xs text-log-info">
+                  {totalLogs > 0 ? ((infoCount / totalLogs) * 100).toFixed(1) : 0}% of total
                 </p>
               </div>
-              <div className="h-8 w-8 bg-log-success-bg rounded-lg flex items-center justify-center">
-                <div className="h-4 w-4 bg-log-success rounded-full" />
+              <div className="h-8 w-8 bg-log-info-bg rounded-lg flex items-center justify-center">
+                <div className="h-4 w-4 bg-log-info rounded-full" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Logs by Level Bar Chart */}
         <Card className="bg-gradient-surface shadow-elevated">
@@ -154,6 +341,7 @@ export const ChartsSection = ({ filters }: ChartsSectionProps) => {
             <CardTitle className="text-base font-medium flex items-center gap-2">
               <PieChartIcon className="h-4 w-4 text-primary" />
               Logs by Application
+              <span className="text-xs text-muted-foreground font-normal">(updates every minute)</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -191,6 +379,7 @@ export const ChartsSection = ({ filters }: ChartsSectionProps) => {
             <CardTitle className="text-base font-medium flex items-center gap-2">
               <Activity className="h-4 w-4 text-primary" />
               Logs Over Time (24h)
+              <span className="text-xs text-muted-foreground font-normal">(updates every second)</span>
             </CardTitle>
           </CardHeader>
           <CardContent>

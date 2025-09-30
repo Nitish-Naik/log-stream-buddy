@@ -1,4 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { useState, useEffect, useMemo } from  "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Sidebar, 
   SidebarContent, 
@@ -18,14 +20,23 @@ import {
   FileBarChart,
   Activity,
   Bell,
-  Database
+  Database,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Zap,
+  TrendingUp
 } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { useAuth } from "@/contexts/AuthContext";
+
 import { cn } from "@/lib/utils";
 
 const navigationItems = [
   {
     title: "Dashboard",
-    href: "/",
+    href: "/dashboard",
     icon: LayoutDashboard,
     description: "Overview and live logs"
   },
@@ -52,11 +63,152 @@ const navigationItems = [
 export const AppNavigation = () => {
   const { state } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
   const isCollapsed = state === "collapsed";
+  const { user } = useAuth();
+
+  // Fetch logs from database
+  const dbLogs = useQuery(api.functions.logs.getLogs, user ? { userId: user.userId, limit: 10000 } : "skip");
+  const logsStats = useQuery(api.functions.logs.getLogsStats, user ? { userId: user.userId } : "skip");
+
+  // Memoized calculations for better performance
+  const stats = useMemo(() => {
+    if (!dbLogs) return { totalLogs: 0, errorCount: 0, warningCount: 0, errorRate: "0.00" };
+    
+    const totalLogs = dbLogs.length;
+    const errorCount = dbLogs.filter(log => log.level === "error").length;
+    const warningCount = dbLogs.filter(log => log.level === "warning").length;
+    const errorRate = totalLogs > 0 ? ((errorCount / totalLogs) * 100).toFixed(2) : "0.00";
+    
+    return { totalLogs, errorCount, warningCount, errorRate };
+  }, [dbLogs]);
+
+  // Activity status calculation
+  const activityStatus = useMemo(() => {
+    if (!dbLogs || dbLogs.length === 0) {
+      return { status: 'idle', label: 'No Activity', color: 'bg-muted-foreground', rate: 0 };
+    }
+
+    const now = Date.now();
+    const recentLogs = dbLogs.filter(log => (now - log.timestamp) < 30000); // Last 30 seconds
+    const veryRecentLogs = dbLogs.filter(log => (now - log.timestamp) < 5000); // Last 5 seconds
+
+    if (veryRecentLogs.length > 0) {
+      const rate = veryRecentLogs.length / 5; // logs per second
+      return { 
+        status: 'very-active', 
+        label: `${rate.toFixed(1)} logs/sec`, 
+        color: 'bg-green-500 animate-pulse',
+        rate 
+      };
+    } else if (recentLogs.length > 0) {
+      return { 
+        status: 'active', 
+        label: 'Active', 
+        color: 'bg-green-400',
+        rate: recentLogs.length / 30 
+      };
+    } else {
+      const lastLogTime = Math.max(...dbLogs.map(log => log.timestamp));
+      const timeSinceLastLog = (now - lastLogTime) / 1000; // seconds
+      
+      if (timeSinceLastLog < 300) { // 5 minutes
+        return { 
+          status: 'recent', 
+          label: 'Recent', 
+          color: 'bg-yellow-500',
+          rate: 0 
+        };
+      } else {
+        return { 
+          status: 'idle', 
+          label: 'Idle', 
+          color: 'bg-muted-foreground',
+          rate: 0 
+        };
+      }
+    }
+  }, [dbLogs]);
+
+  const totalLogs = stats.totalLogs;
+  const errorCount = stats.errorCount;
+  const errorRate = stats.errorRate;
   
+  // Calculate uptime based on time since last error (simplified calculation)
+  const uptimeStats = useMemo(() => {
+    if (!dbLogs || dbLogs.length === 0) {
+      return { uptimePercentage: "100.00", timeSinceLastError: 24 * 60 * 60 * 1000, uptimeDisplay: "24h 0m" };
+    }
+    
+    const lastErrorLog = dbLogs
+      .filter(log => log.level === "error")
+      .sort((a, b) => b.timestamp - a.timestamp)[0];
+    
+    const timeSinceLastError = lastErrorLog ? Date.now() - lastErrorLog.timestamp : (24 * 60 * 60 * 1000); // 24 hours if no errors
+    
+    // Calculate uptime percentage based on last 24 hours
+    const uptimePercentage = Math.min(99.99, (timeSinceLastError / (24 * 60 * 60 * 1000)) * 100).toFixed(2);
+    
+    // Format time since last error for display
+    const hours = Math.floor(timeSinceLastError / (1000 * 60 * 60));
+    const minutes = Math.floor((timeSinceLastError % (1000 * 60 * 60)) / (1000 * 60));
+    const uptimeDisplay = `${hours}h ${minutes}m`;
+    
+    return { uptimePercentage, timeSinceLastError, uptimeDisplay };
+  }, [dbLogs]);
+
+  const uptimePercentage = uptimeStats.uptimePercentage;
+  const uptimeDisplay = uptimeStats.uptimeDisplay;
+
+  // Keyboard navigation shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle shortcuts when not typing in an input
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Alt + number shortcuts for navigation
+      if (event.altKey && !event.ctrlKey && !event.shiftKey) {
+        const num = parseInt(event.key);
+        if (num >= 1 && num <= navigationItems.length) {
+          event.preventDefault();
+          navigate(navigationItems[num - 1].href);
+        }
+      }
+
+      // Alt + D for Dashboard
+      if (event.altKey && event.key.toLowerCase() === 'd') {
+        event.preventDefault();
+        navigate('/dashboard');
+      }
+
+      // Alt + R for Reports
+      if (event.altKey && event.key.toLowerCase() === 'r') {
+        event.preventDefault();
+        navigate('/reports');
+      }
+
+      // Alt + T for Team
+      if (event.altKey && event.key.toLowerCase() === 't') {
+        event.preventDefault();
+        navigate('/team');
+      }
+
+      // Alt + S for Settings
+      if (event.altKey && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        navigate('/settings');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
+
   const isActive = (href: string) => {
-    if (href === "/") {
-      return location.pathname === "/";
+    if (href === "/dashboard") {
+      return location.pathname === "/dashboard";
     }
     return location.pathname.startsWith(href);
   };
@@ -107,24 +259,106 @@ export const AppNavigation = () => {
             </SidebarGroup>
 
             <SidebarGroup>
-              <SidebarGroupLabel>Quick Stats</SidebarGroupLabel>
+              <SidebarGroupLabel className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Quick Stats
+              </SidebarGroupLabel>
               <SidebarGroupContent>
-                <div className="px-3 py-2 space-y-3">
+                <div className="px-3 py-2 space-y-3" role="region" aria-label="System statistics">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Total Logs</span>
-                    <span className="font-medium">2.4M</span>
+                    <div className="flex items-center gap-2">
+                      <Database className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                      <span className="text-muted-foreground">Total Logs</span>
+                    </div>
+                    <span className="font-medium" aria-label={`${stats.totalLogs.toLocaleString()} total logs in system`}>
+                      {stats.totalLogs.toLocaleString()}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Error Rate</span>
-                    <span className="font-medium text-log-error">0.27%</span>
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-3 w-3 text-log-error" aria-hidden="true" />
+                      <span className="text-muted-foreground">Error Rate</span>
+                    </div>
+                    <span className="font-medium text-log-error" aria-label={`Error rate: ${stats.errorRate} percent`}>
+                      {stats.errorRate}%
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Uptime</span>
-                    <span className="font-medium text-status-online">99.95%</span>
+                    <div className="flex items-center gap-2">
+                      <Bell className="h-3 w-3 text-log-warning" aria-hidden="true" />
+                      <span className="text-muted-foreground">Warnings</span>
+                    </div>
+                    <span className="font-medium text-log-warning" aria-label={`${stats.warningCount} warning logs`}>
+                      {stats.warningCount}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-3 w-3 text-status-online" aria-hidden="true" />
+                      <span className="text-muted-foreground">Uptime</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium text-status-online" aria-label={`System uptime: ${uptimePercentage} percent`}>
+                        {uptimePercentage}%
+                      </div>
+                      <div className="text-xs text-muted-foreground" aria-label={`Time since last error: ${uptimeDisplay}`}>
+                        {uptimeDisplay}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                      <span className="text-muted-foreground">System Health</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div 
+                        className={`h-2 w-2 rounded-full ${stats.errorCount > 0 ? 'bg-log-error animate-pulse' : 'bg-status-online'}`} 
+                        aria-hidden="true"
+                      />
+                      <span 
+                        className={`font-medium ${stats.errorCount > 0 ? 'text-log-error' : 'text-status-online'}`}
+                        aria-label={`System health: ${stats.errorCount > 0 ? 'Issues detected' : 'System healthy'}`}
+                      >
+                        {stats.errorCount > 0 ? 'Issues' : 'Healthy'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+                      <span className="text-muted-foreground">Activity</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div 
+                        className={`h-2 w-2 rounded-full ${activityStatus.color}`} 
+                        aria-hidden="true"
+                      />
+                      <span 
+                        className="font-medium text-muted-foreground"
+                        aria-label={`System activity: ${activityStatus.label}`}
+                      >
+                        {activityStatus.label}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </SidebarGroupContent>
             </SidebarGroup>
+
+            {!isCollapsed && (
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <div className="px-3 py-2">
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <div className="font-medium text-muted-foreground/80">Keyboard Shortcuts:</div>
+                      <div>Alt+1-4: Navigate</div>
+                      <div>Alt+D/R/T/S: Quick nav</div>
+                    </div>
+                  </div>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
           </>
         )}
         

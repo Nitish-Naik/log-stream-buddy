@@ -15,7 +15,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         <AppNavigation />
 
         {/* Main Content */}
-        <SidebarInset className="flex-1">
+        <SidebarInset
+          className="flex-1 transition-all duration-200"
+          style={{ marginLeft: '16rem' }} // Sidebar width
+        >
           {/* Header */}
           <header className="h-16 flex items-center border-b border-border bg-card px-4 sticky top-0 z-10">
             <SidebarTrigger className="mr-4" />

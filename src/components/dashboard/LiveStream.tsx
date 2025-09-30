@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { 
-  Play, 
-  Pause, 
-  Square, 
-  Trash2, 
+import {
+  Play,
+  Pause,
+  Square,
+  Trash2,
   Radio,
   ScrollText,
   Zap,
@@ -16,6 +16,9 @@ import {
 } from "lucide-react";
 import { LogLevelBadge } from "@/components/dashboard/LogLevelBadge";
 import { format } from "date-fns";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface StreamLog {
   id: string;
@@ -23,20 +26,60 @@ interface StreamLog {
   level: "error" | "warning" | "info" | "debug";
   message: string;
   app_name: string;
-  meta?: Record<string, any>;
+  meta?: { [key: string]: unknown };
 }
 
-export const LiveStream = () => {
-  const [isStreaming, setIsStreaming] = useState(false);
+interface LiveStreamProps {
+  isStreaming?: boolean;
+  onStreamingChange?: (streaming: boolean) => void;
+  messageCount?: number;
+  onMessageCountChange?: (count: number) => void;
+}
+
+export const LiveStream = ({ 
+  isStreaming: externalIsStreaming, 
+  onStreamingChange,
+  messageCount: externalMessageCount,
+  onMessageCountChange
+}: LiveStreamProps) => {
+  const { user } = useAuth();
+  const [internalIsStreaming, setInternalIsStreaming] = useState(false);
+  const [internalMessageCount, setInternalMessageCount] = useState(0);
   const [logs, setLogs] = useState<StreamLog[]>([]);
   const [autoScroll, setAutoScroll] = useState(true);
   const [connectedClients] = useState(3);
-  const [messageCount, setMessageCount] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Simulate real-time log streaming
+  // Use external state if provided, otherwise use internal state
+  const isStreaming = externalIsStreaming !== undefined ? externalIsStreaming : internalIsStreaming;
+  const setIsStreaming = onStreamingChange || setInternalIsStreaming;
+  const messageCount = externalMessageCount !== undefined ? externalMessageCount : internalMessageCount;
+  const setMessageCount = onMessageCountChange || setInternalMessageCount;
+
+  // Convex hooks
+  const storeLog = useMutation(api.functions.logs.storeLog);
+  const clearUserLogs = useMutation(api.functions.logs.clearUserLogs);
+  const storedLogs = useQuery(api.functions.logs.getLogs, user ? { userId: user.userId, limit: 100000 } : "skip");
+
+  // Load stored logs when component mounts or user changes
   useEffect(() => {
-    if (!isStreaming) return;
+    if (storedLogs && user) {
+      const formattedLogs: StreamLog[] = storedLogs.map(log => ({
+        id: log._id,
+        timestamp: new Date(log.timestamp),
+        level: log.level,
+        message: log.message,
+        app_name: log.app_name,
+        meta: log.meta,
+      }));
+      setLogs(formattedLogs);
+      setMessageCount(formattedLogs.length);
+    }
+  }, [storedLogs, user, setMessageCount]);
+
+  // Simulate real-time log streaming and store in database
+  useEffect(() => {
+    if (!isStreaming || !user) return;
 
     const sampleMessages = [
       { level: "info", message: "User session started", app: "auth-service" },
@@ -47,37 +90,71 @@ export const LiveStream = () => {
       { level: "debug", message: "Database query executed", app: "analytics-service" },
     ];
 
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       const randomMessage = sampleMessages[Math.floor(Math.random() * sampleMessages.length)];
+      const timestamp = Date.now();
+
+      // Store log in database
+      try {
+        await storeLog({
+          timestamp,
+          level: randomMessage.level as StreamLog["level"],
+          message: randomMessage.message,
+          app_name: randomMessage.app,
+          userId: user.userId,
+          organization: user.organization,
+          meta: {
+            sessionId: `sess_${Math.random().toString(36).substr(2, 9)}`,
+            requestId: `req_${Math.random().toString(36).substr(2, 9)}`
+          }
+        });
+      } catch (error) {
+        console.error("Failed to store log:", error);
+      }
+
+      // Update local state for immediate UI feedback
       const newLog: StreamLog = {
-        id: `stream_${Date.now()}_${Math.random()}`,
-        timestamp: new Date(),
+        id: `stream_${timestamp}_${Math.random()}`,
+        timestamp: new Date(timestamp),
         level: randomMessage.level as StreamLog["level"],
         message: randomMessage.message,
         app_name: randomMessage.app,
-        meta: { 
+        meta: {
           sessionId: `sess_${Math.random().toString(36).substr(2, 9)}`,
           requestId: `req_${Math.random().toString(36).substr(2, 9)}`
         }
       };
 
       setLogs(prev => [newLog, ...prev.slice(0, 99)]); // Keep last 100 logs
-      setMessageCount(prev => prev + 1);
+      setMessageCount(messageCount + 1);
     }, Math.random() * 2000 + 500); // Random interval between 500ms - 2.5s
 
     return () => clearInterval(interval);
-  }, [isStreaming]);
+  }, [isStreaming, user, storeLog, messageCount, setMessageCount]);
 
-  // Auto-scroll to top when new logs arrive
+  // Load stored logs on component mount and when storedLogs changes
   useEffect(() => {
-    if (autoScroll && scrollRef.current) {
-      scrollRef.current.scrollTop = 0;
+    if (storedLogs && storedLogs.length > 0) {
+      const formattedLogs: StreamLog[] = storedLogs.map(log => ({
+        id: log._id,
+        timestamp: new Date(log.timestamp),
+        level: log.level as StreamLog["level"],
+        message: log.message,
+        app_name: log.app_name,
+        meta: log.meta
+      }));
+      setLogs(formattedLogs);
+    } else if (storedLogs && storedLogs.length === 0) {
+      setLogs([]);
     }
-  }, [logs, autoScroll]);
+  }, [storedLogs]);
 
   const handleStart = () => {
+    if (!user) {
+      alert("Please log in to start streaming logs");
+      return;
+    }
     setIsStreaming(true);
-    setMessageCount(0);
   };
 
   const handlePause = () => {
@@ -87,12 +164,18 @@ export const LiveStream = () => {
   const handleStop = () => {
     setIsStreaming(false);
     setLogs([]);
-    setMessageCount(0);
   };
 
-  const handleClear = () => {
-    setLogs([]);
-    setMessageCount(0);
+  const handleClear = async () => {
+    if (!user) return;
+    try {
+      await clearUserLogs({ userId: user.userId });
+      setIsStreaming(false);
+      setLogs([]);
+      setMessageCount(0);
+    } catch (error) {
+      console.error('Failed to clear logs:', error);
+    }
   };
 
   return (
