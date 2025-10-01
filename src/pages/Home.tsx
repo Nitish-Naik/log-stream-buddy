@@ -148,11 +148,11 @@ export default function Home() {
               <Button
                 size="lg"
                 variant="outline"
-                onClick={() => window.open('#demo', '_self')}
+                onClick={() => window.open('https://drive.google.com/file/d/16WR0VT_63Q3gWilDhnHaP6-mRcxDcSQf/view?usp=sharing', '_blank')}
                 className="px-8 py-3 text-lg font-semibold border-2 hover:bg-muted/50"
               >
                 <Play className="h-5 w-5 mr-2" />
-                View Demo
+                View Demo Video
               </Button>
             </div>
 
