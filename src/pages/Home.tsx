@@ -15,7 +15,7 @@ import {
   FileText,
   Settings,
   Play,
-  Github,
+  // Github,
   CheckCircle2,
   ArrowRight,
   Sparkles,
@@ -90,14 +90,16 @@ export default function Home() {
           <span className="font-extrabold text-xl text-foreground">Instant Dev Logs</span>
         </div>
         <div className="flex items-center gap-3">
-          <Button
+
+          {/* <Button
             variant="ghost"
             onClick={() => window.open('https://github.com/Nitish-Naik/log-stream-buddy', '_blank')}
             className="hidden sm:flex"
           >
             <Github className="h-4 w-4 mr-2" />
             GitHub
-          </Button>
+          </Button> */}
+
           <Button
             variant="ghost"
             onClick={() => navigate("/login")}
@@ -326,7 +328,7 @@ export default function Home() {
               Get Started Now
               <ArrowRight className="h-5 w-5 ml-2" />
             </Button>
-
+{/* 
             <Button
               size="lg"
               variant="outline"
@@ -335,7 +337,8 @@ export default function Home() {
             >
               <Github className="h-5 w-5 mr-2" />
               View on GitHub
-            </Button>
+            </Button> */}
+
           </div>
 
           <div className="pt-8 border-t border-border">
@@ -375,14 +378,16 @@ export default function Home() {
 
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
               <span>© 2025 Instant Dev Logs. All rights reserved.</span>
-              <Button
+              
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => window.open('https://github.com/Nitish-Naik/log-stream-buddy', '_blank')}
               >
                 <Github className="h-4 w-4 mr-1" />
                 GitHub
-              </Button>
+              </Button> */}
+
             </div>
           </div>
         </div>
